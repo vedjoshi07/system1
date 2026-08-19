@@ -1,0 +1,10 @@
+# Local backend environment (contains DB credentials)
+backend/.env
+
+# Uploaded item images
+backend/uploads/items/*
+!backend/uploads/items/.gitkeep
+
+# PHP / OS noise
+.DS_Store
+*.log

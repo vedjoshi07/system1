@@ -27,7 +27,7 @@ window.Auth = (function () {
     ],
     ADMIN: [
       { href: "dashboard.html", icon: "bi-grid-1x2", label: "Dashboard" },
-      { href: "moderate-posts.html", icon: "bi-check2-square", label: "Moderate Posts" },
+      { href: "log-found-item.html", icon: "bi-plus-circle", label: "Log Found Item" },
       { href: "manage-handovers.html", icon: "bi-hand-thumbs-up", label: "Manage Handovers" },
       { href: "manage-categories.html", icon: "bi-tags", label: "Categories" },
       { href: "manage-users.html", icon: "bi-people", label: "Users" },

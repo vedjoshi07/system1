@@ -146,7 +146,7 @@ class ItemController
             'location'    => trim((string) $data['location']),
             'itemDate'    => (string) $data['itemDate'],
             'imageUrl'    => $imageUrl,
-            'status'      => 'PENDING',
+            'status'      => 'ACTIVE',
             'postedBy'    => (int) $user['userId'],
         ];
 
@@ -157,9 +157,17 @@ class ItemController
         }
 
         $itemId = ItemRepository::create($itemData);
-        AuditLogger::log((int) $user['userId'], $itemId, 'POST', null, 'PENDING', ucfirst(strtolower($type)) . ' item created');
+        AuditLogger::log((int) $user['userId'], $itemId, 'POST', null, 'ACTIVE', ucfirst(strtolower($type)) . ' item created');
 
-        Response::created(['itemId' => $itemId], 'Your ' . strtolower($type) . ' item report has been submitted for review');
+        // Notify the submitter immediately — no approval needed.
+        $typeLabel = strtolower($type);
+        NotificationController::notify(
+            (int) $user['userId'],
+            $itemId,
+            'Your ' . $typeLabel . ' item "' . trim((string) $data['title']) . '" has been logged successfully.'
+        );
+
+        Response::created(['itemId' => $itemId], 'Your ' . $typeLabel . ' item has been logged successfully');
     }
 
     public static function updateItem(array $user, array $item, int $id): void

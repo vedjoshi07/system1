@@ -12,7 +12,7 @@
 <body class="auth-body">
   <div class="auth-card wide">
     <div class="text-center">
-      <span class="auth-logo"><i class="bi bi-person-plus"></i></span>
+      <img src="assets/img/logo.png" alt="FINDLY" width="60" height="60" class="rounded-3 mb-2 shadow-sm">
       <h1 class="auth-title">Create your account</h1>
       <p class="auth-sub">Public registration creates a <strong>Student</strong> account. Staff/Admin accounts are created by the administrator.</p>
     </div>
@@ -26,7 +26,7 @@
       </div>
       <div class="col-md-6">
         <label class="form-label" for="email">Institute Email</label>
-        <input type="email" class="form-control" id="email" placeholder="you@ganpatuniversity.ac.in" required>
+        <input type="email" class="form-control" id="email" placeholder="enrollment@gnu.ac.in" pattern=".+@(gnu\.ac\.in|ganpatuniversity\.ac\.in)" required>
       </div>
       <div class="col-md-6">
         <label class="form-label" for="contactNo">Contact Number</label>
@@ -34,7 +34,7 @@
       </div>
       <div class="col-md-6">
         <label class="form-label" for="enrollmentNo">Enrollment Number</label>
-        <input type="text" class="form-control" id="enrollmentNo" placeholder="e.g. 20BECE1001" required>
+        <input type="text" class="form-control" id="enrollmentNo" placeholder="e.g. Enrollment Number" required>
       </div>
       <div class="col-md-6">
         <label class="form-label" for="password">Password</label>
@@ -72,6 +72,14 @@
       $("#regBtn").prop("disabled", on);
     }
 
+    $("#email").on("input", function () {
+      var val = $(this).val().trim();
+      var match = val.match(/^([0-9]+)@gnu\.ac\.in$/i);
+      if (match && !$("#enrollmentNo").val()) {
+        $("#enrollmentNo").val(match[1]);
+      }
+    });
+
     $("#regForm").on("submit", async function (e) {
       e.preventDefault();
       var payload = {
@@ -84,6 +92,10 @@
       };
       if (!payload.name || !payload.email || !payload.contactNo || !payload.password) {
         showError("Please fill in all required fields.");
+        return;
+      }
+      if (!/@(gnu\.ac\.in|ganpatuniversity\.ac\.in)$/i.test(payload.email)) {
+        showError("Use your institutional email (@gnu.ac.in or @ganpatuniversity.ac.in).");
         return;
       }
       if (payload.password.length < 6) {

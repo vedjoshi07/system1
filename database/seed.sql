@@ -21,16 +21,16 @@ INSERT INTO category (categoryName) VALUES
 -- Admin / Staff / Students
 -- Admin account (role ADMIN)
 INSERT INTO user (name, email, password, role, contactNo, enrollmentNo, accountStatus) VALUES
-('Rohit Desai', 'admin@ganpatuniversity.ac.in', '$2y$10$0X/aZUnOnMPecTNhtGONkev9VgLeyeSppIS2mlvh44Zi3Mo8ujZNm', 'ADMIN', '9876543210', 'ADM0001', 'ACTIVE');
+('Rohit Desai', 'admin@gnu.ac.in', '$2y$10$0X/aZUnOnMPecTNhtGONkev9VgLeyeSppIS2mlvh44Zi3Mo8ujZNm', 'ADMIN', '9876543210', 'ADM0001', 'ACTIVE');
 
 -- Staff account (role STAFF) — campus security desk officer
 INSERT INTO user (name, email, password, role, contactNo, enrollmentNo, accountStatus) VALUES
-('Priya Shah', 'staff@ganpatuniversity.ac.in', '$2y$10$scaQMga0v6aqSAb8b9PzfORrMj.s6t.cdEAMTlz3DAfGnK9mDcFze', 'STAFF', '9825012345', 'EMP1023', 'ACTIVE');
+('Priya Shah', 'staff@gnu.ac.in', '$2y$10$scaQMga0v6aqSAb8b9PzfORrMj.s6t.cdEAMTlz3DAfGnK9mDcFze', 'STAFF', '9825012345', 'EMP1023', 'ACTIVE');
 
 -- Two Student accounts
 INSERT INTO user (name, email, password, role, contactNo, enrollmentNo, accountStatus) VALUES
-('Meet Patel', 'meet.patel@ganpatuniversity.ac.in', '$2y$10$AtxL1A31qeA0TV7BJSUUau7c5.vyGc6jFckzKUO1LUlmDMRLZ9zqG', 'STUDENT', '9099045678', '20BECE1001', 'ACTIVE'),
-('Sneha Joshi', 'sneha.joshi@ganpatuniversity.ac.in', '$2y$10$K7aJm5VahzVTuGMRiMRhxOIZNUG.mejMIMxZAzU.qY1HScZic77km', 'STUDENT', '9725567890', '21BECE2034', 'ACTIVE');
+('Meet Patel', 'meet.patel@gnu.ac.in', '$2y$10$AtxL1A31qeA0TV7BJSUUau7c5.vyGc6jFckzKUO1LUlmDMRLZ9zqG', 'STUDENT', '9099045678', '20BECE1001', 'ACTIVE'),
+('Sneha Joshi', 'sneha.joshi@gnu.ac.in', '$2y$10$K7aJm5VahzVTuGMRiMRhxOIZNUG.mejMIMxZAzU.qY1HScZic77km', 'STUDENT', '9725567890', '21BECE2034', 'ACTIVE');
 
 -- ============================================================
 -- Sample items across LOST / FOUND and different statuses

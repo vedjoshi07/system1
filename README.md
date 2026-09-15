@@ -124,14 +124,8 @@ Open **http://127.0.0.1:8080**. `frontend/config/config.js` automatically points
 
 ---
 
-## Demo / sample accounts (from `seed.sql`)
-
-| Role    | Email                                | Password     |
-|---------|--------------------------------------|--------------|
-| Admin   | `admin@ganpatuniversity.ac.in`      | `Admin@123`  |
-| Staff   | `staff@ganpatuniversity.ac.in`      | `Staff@123`  |
-| Student | `meet.patel@ganpatuniversity.ac.in` | `Student@123`|
-| Student | `sneha.joshi@ganpatuniversity.ac.in`| `Student@123`|
+## Demo / sample accounts
+See `credentials.md` for default accounts used in `seed.sql`.
 
 Public registration always creates **Student** accounts. Staff/Admin accounts are
 created by an Admin or seeded — there is no public "register as Staff/Admin" option.

@@ -40,7 +40,7 @@ class AuthController
             'password'   => PasswordHasher::hash((string) $data['password']),
             'role'       => 'STUDENT',
             'contactNo'  => trim((string) $data['contactNo']),
-            'enrollmentNo' => null,
+            'enrollmentNo' => !empty($data['enrollmentNo']) ? trim((string) $data['enrollmentNo']) : explode('@', $email)[0],
         ]);
 
         $user = UserRepository::byId($userId);
@@ -56,6 +56,10 @@ class AuthController
 
         if ($email === '' || $password === '') {
             Response::error('Email and password are required', 422);
+        }
+
+        if (!preg_match('/@(gnu\.ac\.in|ganpatuniversity\.ac\.in)$/i', $email)) {
+            Response::error('A valid institutional email is required (@gnu.ac.in or @ganpatuniversity.ac.in)', 422);
         }
 
         $user = UserRepository::byEmail($email);

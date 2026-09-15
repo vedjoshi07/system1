@@ -1,0 +1,8 @@
+# railway.toml — Railway deployment config for FINDLY backend
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "composer install --no-dev --optimize-autoloader && php -S 0.0.0.0:$PORT -t public"
+healthcheckPath = "/api/auth/me"
+healthcheckTimeout = 10

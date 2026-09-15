@@ -27,9 +27,6 @@ window.Staff = (function () {
   function actions(item) {
     var s = item.status;
     var btns = "";
-    if (s === "PENDING") {
-      btns = '<span class="small text-muted">Awaiting approval</span>';
-    }
     if (s === "ACTIVE") {
       btns =
         '<button class="btn btn-sm btn-soft mb-1 custody-btn" data-id="' + item.itemId + '"><i class="bi bi-arrow-left-right"></i> Custody</button> ' +
@@ -42,9 +39,6 @@ window.Staff = (function () {
     }
     if (s === "RESOLVED") {
       btns = '<span class="small text-muted"><i class="bi bi-check-circle text-success"></i> Handed over</span>';
-    }
-    if (s === "REJECTED") {
-      btns = '<span class="small text-muted">Rejected</span>';
     }
     return btns;
   }

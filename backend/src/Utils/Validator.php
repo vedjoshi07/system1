@@ -26,7 +26,7 @@ class Validator
         return $this->data[$field] ?? $default;
     }
 
-    public function required(string $field, string $label = null): self
+    public function required(string $field, ?string $label = null): self
     {
         $label = $label ?? str_replace('_', ' ', $field);
         $value = $this->data[$field] ?? null;
@@ -36,7 +36,7 @@ class Validator
         return $this;
     }
 
-    public function length(string $field, int $min, int $max, string $label = null): self
+    public function length(string $field, int $min, int $max, ?string $label = null): self
     {
         $label = $label ?? str_replace('_', ' ', $field);
         $value = $this->data[$field] ?? '';
@@ -47,17 +47,17 @@ class Validator
         return $this;
     }
 
-    public function email(string $field, string $label = null): self
+    public function email(string $field, ?string $label = null): self
     {
         $label = $label ?? str_replace('_', ' ', $field);
-        $value = $this->data[$field] ?? '';
-        if ($value !== '' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+        $value = (string) ($this->data[$field] ?? '');
+        if ($value !== '' && (!filter_var($value, FILTER_VALIDATE_EMAIL) || !preg_match('/^.+@(gnu\.ac\.in|ganpatuniversity\.ac\.in)$/i', $value))) {
             $this->errors[$field] = 'A valid ' . $label . ' is required';
         }
         return $this;
     }
 
-    public function enum(string $field, array $allowed, string $label = null): self
+    public function enum(string $field, array $allowed, ?string $label = null): self
     {
         $label = $label ?? str_replace('_', ' ', $field);
         $value = $this->data[$field] ?? null;
@@ -67,7 +67,7 @@ class Validator
         return $this;
     }
 
-    public function date(string $field, string $label = null): self
+    public function date(string $field, ?string $label = null): self
     {
         $label = $label ?? str_replace('_', ' ', $field);
         $value = $this->data[$field] ?? '';
@@ -80,7 +80,7 @@ class Validator
         return $this;
     }
 
-    public function int(string $field, string $label = null): self
+    public function int(string $field, ?string $label = null): self
     {
         $label = $label ?? str_replace('_', ' ', $field);
         $value = $this->data[$field] ?? null;
@@ -90,7 +90,7 @@ class Validator
         return $this;
     }
 
-    public function phone(string $field, string $label = null): self
+    public function phone(string $field, ?string $label = null): self
     {
         $label = $label ?? str_replace('_', ' ', $field);
         $value = $this->data[$field] ?? '';

@@ -12,7 +12,7 @@
 <body class="auth-body">
   <div class="auth-card">
     <div class="text-center">
-      <span class="auth-logo"><i class="bi bi-search"></i></span>
+      <img src="assets/img/logo.png" alt="FINDLY" width="60" height="60" class="rounded-3 mb-2 shadow-sm">
       <h1 class="auth-title">Welcome back</h1>
       <p class="auth-sub">Sign in to your FINDLY account</p>
     </div>
@@ -22,7 +22,7 @@
     <form id="loginForm" novalidate>
       <div class="mb-3">
         <label class="form-label" for="email">Institute Email</label>
-        <input type="email" class="form-control" id="email" placeholder="you@ganpatuniversity.ac.in" required>
+        <input type="email" class="form-control" id="email" placeholder="you@gnu.ac.in or you@ganpatuniversity.ac.in" required>
       </div>
       <div class="mb-4">
         <label class="form-label" for="password">Password</label>
@@ -38,13 +38,6 @@
       <a href="register.html" class="small fw-semibold">Register as a Student</a>
     </div>
 
-    <hr>
-    <div class="small text-muted">
-      <strong>Demo accounts</strong>
-      <div class="mt-1">Student · <code>meet.patel@ganpatuniversity.ac.in</code> / <code>Student@123</code></div>
-      <div>Staff &nbsp;&nbsp;&nbsp;· <code>staff@ganpatuniversity.ac.in</code> / <code>Staff@123</code></div>
-      <div>Admin &nbsp;· <code>admin@ganpatuniversity.ac.in</code> / <code>Admin@123</code></div>
-    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
@@ -71,6 +64,10 @@
       var password = $("#password").val();
       if (!email || !password) {
         showError("Please enter your email and password.");
+        return;
+      }
+      if (!/@(gnu\.ac\.in|ganpatuniversity\.ac\.in)$/i.test(email)) {
+        showError("Use your institutional email (@gnu.ac.in or @ganpatuniversity.ac.in).");
         return;
       }
       setLoading(true);

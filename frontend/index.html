@@ -16,7 +16,7 @@
         <img src="assets/img/logo.png" alt="" width="40" height="40" class="rounded">
         <div>
           <div class="fin-brand">FINDLY</div>
-          <div class="small text-muted" style="margin-top:-3px">Campus Lost &amp; Found</div>
+          <div class="small text-muted landing-brand-sub">Campus Lost &amp; Found</div>
         </div>
       </div>
       <div id="landingAuthBtns">
@@ -27,8 +27,8 @@
 
     <header class="landing-hero text-center">
       <div class="landing-pill mb-4"><i class="bi bi-box-seam"></i> Your campus lost &amp; found, finally organised</div>
-      <h1 class="mb-3">Lost something on campus?<br><span class="fst-italic" style="color:var(--fin-indigo)">We&rsquo;ll help you find it.</span></h1>
-      <p class="lead mx-auto mb-4" style="max-width:620px">
+      <h1 class="mb-3">Lost something on campus?<br><span class="fst-italic landing-hero-highlight">We&rsquo;ll help you find it.</span></h1>
+      <p class="lead mx-auto mb-4 landing-hero-lead">
         Report what you lost, browse what was found, and let the campus security desk handle
         verified handovers. One clean, structured workflow — no more WhatsApp chaos.
       </p>
@@ -82,7 +82,24 @@
         if (user) {
           var map = { STUDENT: "student/", STAFF: "staff/", ADMIN: "admin/" };
           document.getElementById("landingAuthBtns").innerHTML =
-            '<a href="' + map[user.role] + 'dashboard.html" class="btn btn-primary">Go to my dashboard</a>';
+            '<a href="' + map[user.role] + 'dashboard.html" class="btn btn-primary">Go to dashboard</a>';
+
+          var ctaRow = document.querySelector(".landing-cta-row");
+          if (ctaRow) {
+            if (user.role === "ADMIN") {
+              ctaRow.innerHTML =
+                '<a href="admin/log-found-item.html" class="btn btn-primary btn-lg px-4"><i class="bi bi-plus-circle me-2"></i>Log a Found Item</a>' +
+                '<a href="admin/moderate-posts.html" class="btn btn-light btn-lg px-4 border"><i class="bi bi-check2-square me-2"></i>Moderate Posts</a>';
+            } else if (user.role === "STAFF") {
+              ctaRow.innerHTML =
+                '<a href="staff/log-found-item.html" class="btn btn-primary btn-lg px-4"><i class="bi bi-plus-circle me-2"></i>Log a Found Item</a>' +
+                '<a href="staff/manage-found-items.html" class="btn btn-light btn-lg px-4 border"><i class="bi bi-archive me-2"></i>Manage Found Items</a>';
+            } else {
+              ctaRow.innerHTML =
+                '<a href="student/report-lost.html" class="btn btn-primary btn-lg px-4"><i class="bi bi-plus-circle me-2"></i>Report a Lost Item</a>' +
+                '<a href="student/browse-found.html" class="btn btn-light btn-lg px-4 border"><i class="bi bi-search me-2"></i>Browse Found Items</a>';
+            }
+          }
         }
       } catch (_) { /* guest stays on landing */ }
     })();

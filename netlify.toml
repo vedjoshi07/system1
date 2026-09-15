@@ -1,0 +1,9 @@
+[build]
+  publish = "frontend"
+
+# SPA-style fallback not needed (multi-page static site),
+# but handle clean 404s:
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 404

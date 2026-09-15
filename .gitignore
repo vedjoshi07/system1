@@ -8,3 +8,5 @@ backend/uploads/items/*
 # PHP / OS noise
 .DS_Store
 *.log
+# Local Netlify folder
+.netlify

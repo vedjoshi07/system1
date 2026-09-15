@@ -11,9 +11,16 @@
 </head>
 <body data-page="notifications">
   <main class="fin-main">
-    <div class="fin-page-head">
-      <h1 class="fin-page-title">Notifications</h1>
-      <p class="fin-page-sub mb-0">Updates about your reports and items you&rsquo;re involved with.</p>
+    <div class="fin-page-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h1 class="fin-page-title">Notifications</h1>
+        <p class="fin-page-sub mb-0">Updates about your reports and campus lost &amp; found items.</p>
+      </div>
+      <div id="markAllWrap" class="d-none">
+        <button class="btn btn-outline-primary btn-sm" id="pageMarkAllRead">
+          <i class="bi bi-check2-all me-1"></i>Mark all as read
+        </button>
+      </div>
     </div>
 
     <div class="fin-card">
@@ -39,52 +46,75 @@
       var list = $("#notifPageList");
       try {
         var d = await Notifications.loadAll();
+        var notifs = d.notifications || [];
         list.html("");
-        if (!d.notifications.length) {
-          list.html('<div class="fin-empty"><i class="bi bi-bell-slash"></i>You have no notifications.</div>');
+
+        var hasUnread = notifs.some(function (n) { return !n.isRead || n.isRead === "0" || n.isRead === 0; });
+        if (hasUnread) {
+          $("#markAllWrap").removeClass("d-none");
+        } else {
+          $("#markAllWrap").addClass("d-none");
+        }
+
+        if (!notifs.length) {
+          list.html('<div class="fin-empty py-5"><i class="bi bi-bell-slash fs-1 d-block mb-2 text-secondary"></i>You have no notifications yet.</div>');
           return;
         }
-        var el = document.createElement("div");
-        d.notifications.forEach(function (n) {
-          var row = document.createElement("div");
-          row.className = "d-flex align-items-start gap-3 p-3 " + (Number(n.isRead) ? "bg-white" : "bg-white");
-          row.style.cssText = Number(n.isRead) ? "" : "background:var(--fin-indigo-soft)";
-          row.innerHTML =
-            '<div class="fin-avatar mt-1" style="width:36px;height:36px;font-size:0.95rem"><i class="bi ' + (Number(n.isRead) ? "bi-bell" : "bi-bell-fill") + '"></i></div>' +
-            '<div class="flex-grow-1">' +
-              '<div>' + Auth.escapeHtml(n.message) + '</div>' +
-              '<div class="small text-muted mt-1">' + window.formatDateTime(n.createdAt) + (n.itemTitle ? " · " + Auth.escapeHtml(n.itemTitle) : "") + "</div>" +
-            "</div>" +
-            (Number(n.isRead)
-              ? ""
-              : '<button class="btn btn-sm btn-soft read-btn" data-id="' + n.notificationId + '">Mark read</button>');
-          el.appendChild(row);
+
+        var container = $('<div class="list-group list-group-flush"></div>');
+        notifs.forEach(function (n) {
+          var isUnread = !n.isRead || n.isRead === "0" || n.isRead === 0;
+          var dateStr = window.formatDateTime ? window.formatDateTime(n.createdAt) : n.createdAt;
+          var itemLink = n.itemId ? '<a href="item-details.html?id=' + n.itemId + '" class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-eye me-1"></i>View Item</a>' : '';
+
+          var row = $(
+            '<div class="list-group-item d-flex align-items-start gap-3 p-3 ' + (isUnread ? 'bg-light' : '') + '">' +
+              '<div class="fin-avatar mt-1 ' + (isUnread ? 'text-bg-primary' : 'text-bg-light border') + '" style="width:38px;height:38px;flex-shrink:0">' +
+                '<i class="bi ' + (isUnread ? 'bi-bell-fill' : 'bi-bell') + '"></i>' +
+              '</div>' +
+              '<div class="flex-grow-1">' +
+                '<div class="' + (isUnread ? 'fw-bold text-dark' : 'text-secondary') + '">' + Auth.escapeHtml(n.message) + '</div>' +
+                '<div class="small text-muted mt-1">' + (dateStr || 'Just now') + (n.itemTitle ? ' · <span class="fw-medium text-dark">' + Auth.escapeHtml(n.itemTitle) + '</span>' : '') + '</div>' +
+              '</div>' +
+              '<div class="d-flex align-items-center gap-1 flex-shrink-0">' +
+                itemLink +
+                (isUnread ? '<button class="btn btn-sm btn-soft read-btn" data-id="' + n.notificationId + '">Mark read</button>' : '') +
+              '</div>' +
+            '</div>'
+          );
+          container.append(row);
         });
 
-        var doneReading = [];
-        el.addEventListener("click", function (e) {
-          var b = e.target.closest(".read-btn");
-          if (!b) return;
-          b.disabled = true;
-          b.textContent = "Read ✓";
-          (async function () {
-            try {
-              await Notifications.markRead(Number(b.dataset.id));
-              doneReading.push(1);
-              if (doneReading.length >= el.querySelectorAll(".read-btn").length) {
-                Notifications.refreshBadge();
-                window.showToast("All caught up!");
-                load();
-              }
-            } catch (err) {
-              window.showToast(err.message, "danger");
-            }
-          })();
+        list.append(container);
+
+        // Individual mark read handler
+        $(".read-btn").on("click", async function () {
+          var btn = $(this);
+          var nid = btn.data("id");
+          btn.prop("disabled", true).text("...");
+          try {
+            await Notifications.markRead(nid);
+            window.showToast("Notification marked as read");
+            load();
+          } catch (err) {
+            window.showToast(err.message, "danger");
+            btn.prop("disabled", false).text("Mark read");
+          }
         });
 
-        list.append(el);
+        // Mark all as read handler
+        $("#pageMarkAllRead").off("click").on("click", async function () {
+          var unreadList = notifs.filter(function (n) { return !n.isRead || n.isRead === "0" || n.isRead === 0; });
+          for (var i = 0; i < unreadList.length; i++) {
+            try { await API.put("/api/notifications/" + unreadList[i].notificationId + "/read"); } catch (_) {}
+          }
+          Notifications.refreshBadge();
+          window.showToast("All notifications marked as read");
+          load();
+        });
+
       } catch (err) {
-        list.html('<div class="fin-empty fin-empty-error">Could not load notifications.</div>');
+        list.html('<div class="fin-empty fin-empty-error py-4 text-danger">Could not load notifications.</div>');
       }
     }
   </script>

@@ -8,8 +8,8 @@ window.API = (function () {
   // ============================================================
   // IN-BROWSER SIMULATION ENGINE (Seed data + LocalStorage DB)
   // ============================================================
-  var DB_KEY = 'findly_cloud_db_v3';
-  var SESSION_KEY = 'findly_cloud_session_v3';
+  var DB_KEY = 'findly_cloud_db_v4';
+  var SESSION_KEY = 'findly_cloud_session_v4';
 
   function getDB() {
     var raw = localStorage.getItem(DB_KEY);
@@ -138,10 +138,13 @@ window.API = (function () {
         }
       ],
       notifications: [
-        { notificationId: 1, userId: 3, itemId: 1, message: 'Your lost item report "Black Lenovo Laptop Charger" is awaiting admin approval.', isRead: false, createdAt: '2026-08-18 10:15:00' },
-        { notificationId: 2, userId: 4, itemId: 2, message: 'Your lost item report "Blue College ID Card" has been approved and is now live.', isRead: true, createdAt: '2026-08-15 16:00:00' },
-        { notificationId: 3, userId: 2, itemId: 4, message: 'Found item "Grey Laptop Bag with Notebooks" has been approved and is now visible to students.', isRead: true, createdAt: '2026-08-12 14:10:00' },
-        { notificationId: 4, userId: 2, itemId: 5, message: 'Item "Karbonn Power Bank" was marked as resolved. Handover completed.', isRead: true, createdAt: '2026-08-06 11:45:00' }
+        { notificationId: 1, userId: 5, itemId: null, message: 'Welcome to FINDLY! You can report lost items or browse found campus items anytime.', isRead: false, createdAt: '2026-08-20 09:00:00' },
+        { notificationId: 2, userId: 5, itemId: 2, message: 'A new found item "Blue College ID Card" matching your department was turned in.', isRead: false, createdAt: '2026-08-16 11:00:00' },
+        { notificationId: 3, userId: 3, itemId: 1, message: 'Your lost item report "Black Lenovo Laptop Charger" is active and visible.', isRead: false, createdAt: '2026-08-18 10:15:00' },
+        { notificationId: 4, userId: 4, itemId: 2, message: 'Your lost item report "Blue College ID Card" has been approved.', isRead: true, createdAt: '2026-08-15 16:00:00' },
+        { notificationId: 5, userId: 2, itemId: 4, message: 'Found item "Grey Laptop Bag with Notebooks" has been approved for custody.', isRead: true, createdAt: '2026-08-12 14:10:00' },
+        { notificationId: 6, userId: 2, itemId: 5, message: 'Item "Karbonn Power Bank" was marked as resolved. Handover completed.', isRead: true, createdAt: '2026-08-06 11:45:00' },
+        { notificationId: 7, userId: 1, itemId: 3, message: 'New found item "Samsung Galaxy Watch" is awaiting moderation.', isRead: false, createdAt: '2026-08-17 09:05:00' }
       ],
       auditLogs: [
         { auditId: 1, userId: 2, itemId: 3, action: 'POST', oldStatus: null, newStatus: 'PENDING', details: 'Found item logged: Samsung Galaxy Watch', timestamp: '2026-08-17 09:05:00' },
@@ -196,6 +199,17 @@ window.API = (function () {
       return 'General';
     }
 
+    // Helper to get item title by ID
+    function getItemTitle(itemId) {
+      if (!itemId) return null;
+      for (var i = 0; i < db.items.length; i++) {
+        if (db.items[i].itemId === parseInt(itemId, 10)) {
+          return db.items[i].title;
+        }
+      }
+      return null;
+    }
+
     // ── Auth Routes ──────────────────────────────────────────
     if (pathname === '/api/auth/me') {
       if (!session) {
@@ -231,6 +245,17 @@ window.API = (function () {
             accountStatus: 'ACTIVE'
           };
           db.users.push(found);
+
+          // Add welcome notification for the new user
+          db.notifications.unshift({
+            notificationId: db.notifications.length + 1,
+            userId: found.userId,
+            itemId: null,
+            message: 'Welcome to FINDLY! You can report lost items or browse found campus items anytime.',
+            isRead: false,
+            createdAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
+          });
+
           saveDB(db);
         } else {
           var err = new Error('Invalid email or password');
@@ -253,6 +278,16 @@ window.API = (function () {
         accountStatus: 'ACTIVE'
       };
       db.users.push(newUser);
+
+      db.notifications.unshift({
+        notificationId: db.notifications.length + 1,
+        userId: newUser.userId,
+        itemId: null,
+        message: 'Welcome to FINDLY! Your student account has been registered successfully.',
+        isRead: false,
+        createdAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
+      });
+
       saveDB(db);
       setSession(newUser);
       return newUser;
@@ -392,6 +427,21 @@ window.API = (function () {
         createdAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
       };
       db.items.unshift(createdItem);
+
+      // Instant notification for the item submitter
+      var notifMsg = isLost
+        ? 'Your lost report for "' + createdItem.title + '" is now active on campus portal.'
+        : 'Found item "' + createdItem.title + '" was logged into campus inventory.';
+
+      db.notifications.unshift({
+        notificationId: db.notifications.length + 1,
+        userId: currentUserId,
+        itemId: createdItem.itemId,
+        message: notifMsg,
+        isRead: false,
+        createdAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
+      });
+
       saveDB(db);
       return { itemId: createdItem.itemId, item: createdItem };
     }
@@ -401,7 +451,17 @@ window.API = (function () {
       var mid = parseInt(RegExp.$1, 10);
       for (var m = 0; m < db.items.length; m++) {
         if (db.items[m].itemId === mid) {
-          db.items[m].status = (body.decision === 'APPROVE' ? 'ACTIVE' : 'REJECTED');
+          var decision = (body.decision === 'APPROVE' ? 'ACTIVE' : 'REJECTED');
+          db.items[m].status = decision;
+          var verb = decision === 'ACTIVE' ? 'approved and is now live' : 'rejected';
+          db.notifications.unshift({
+            notificationId: db.notifications.length + 1,
+            userId: db.items[m].postedBy,
+            itemId: mid,
+            message: 'Your item report "' + db.items[m].title + '" has been ' + verb + '.',
+            isRead: false,
+            createdAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
+          });
           saveDB(db);
           return { itemId: mid, newStatus: db.items[m].status };
         }
@@ -413,6 +473,16 @@ window.API = (function () {
         if (db.items[cl].itemId === cid) {
           db.items[cl].status = 'CLAIMED';
           db.items[cl].claimedAt = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+          db.notifications.unshift({
+            notificationId: db.notifications.length + 1,
+            userId: db.items[cl].postedBy,
+            itemId: cid,
+            message: 'Your item "' + db.items[cl].title + '" has been claimed for verification.',
+            isRead: false,
+            createdAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
+          });
+
           saveDB(db);
           return { itemId: cid, status: 'CLAIMED' };
         }
@@ -425,6 +495,16 @@ window.API = (function () {
           db.items[r].status = 'RESOLVED';
           db.items[r].custodyStatus = 'HANDED_OVER';
           db.items[r].resolvedAt = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+          db.notifications.unshift({
+            notificationId: db.notifications.length + 1,
+            userId: db.items[r].postedBy,
+            itemId: rid,
+            message: 'Handover complete! Item "' + db.items[r].title + '" has been resolved.',
+            isRead: false,
+            createdAt: new Date().toISOString().replace('T', ' ').slice(0, 19)
+          });
+
           saveDB(db);
           return { itemId: rid, status: 'RESOLVED' };
         }
@@ -470,7 +550,6 @@ window.API = (function () {
     }
 
     if (pathname === '/api/dashboard/staff') {
-      var staffId = session ? session.userId : 2;
       var pendingFound = db.items.filter(function (x) { return x.itemType === 'FOUND' && x.status === 'PENDING'; }).length;
       var activeFoundStaff = db.items.filter(function (x) { return x.itemType === 'FOUND' && x.status === 'ACTIVE'; }).length;
       var inCustodyStaff = db.items.filter(function (x) { return x.custodyStatus === 'IN_CUSTODY'; }).length;
@@ -517,18 +596,27 @@ window.API = (function () {
 
     // ── Notifications ────────────────────────────────────────
     if (pathname === '/api/notifications') {
-      var userMyId = session ? session.userId : null;
-      var userNotes = userMyId ? db.notifications.filter(function (n) { return n.userId === userMyId; }) : [];
-      var unread = userNotes.filter(function (n) { return !n.isRead; }).length;
-      return { notifications: userNotes, unread: unread };
+      var userMyId = session ? session.userId : 5;
+      var userNotes = db.notifications.filter(function (n) { return n.userId === userMyId; });
+
+      // Add itemTitle to notifications
+      userNotes.forEach(function (n) {
+        if (!n.itemTitle && n.itemId) {
+          n.itemTitle = getItemTitle(n.itemId);
+        }
+      });
+
+      var unreadCount = userNotes.filter(function (n) { return !n.isRead || n.isRead === "0" || n.isRead === 0; }).length;
+      return { notifications: userNotes, unread: unreadCount };
     }
+
     if (pathname.match(/^\/api\/notifications\/(\d+)\/read$/)) {
       var nid = parseInt(RegExp.$1, 10);
       for (var no = 0; no < db.notifications.length; no++) {
         if (db.notifications[no].notificationId === nid) {
           db.notifications[no].isRead = true;
           saveDB(db);
-          return { message: 'Read' };
+          return { message: 'Notification marked as read' };
         }
       }
       return { message: 'OK' };

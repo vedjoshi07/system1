@@ -54,15 +54,20 @@ window.SearchFilter = (function () {
     }
   }
 
-  /** Populate a <select> with categories. */
+  /** Populate a <select> with categories safely. */
   async function loadCategories(selectEl, includeAll) {
     if (!selectEl) return;
-    var data = await API.get("/api/categories");
-    selectEl.innerHTML =
-      (includeAll ? '<option value="">All categories</option>' : '<option value="">Select category</option>') +
-      data.categories
-        .map(function (c) { return '<option value="' + c.categoryId + '">' + Auth.escapeHtml(c.categoryName) + "</option>"; })
-        .join("");
+    try {
+      var data = await API.get("/api/categories");
+      var list = (data && data.categories) ? data.categories : (Array.isArray(data) ? data : []);
+      selectEl.innerHTML =
+        (includeAll ? '<option value="">All categories</option>' : '<option value="">Select category</option>') +
+        list
+          .map(function (c) { return '<option value="' + c.categoryId + '">' + (window.Auth ? Auth.escapeHtml(c.categoryName) : c.categoryName) + "</option>"; })
+          .join("");
+    } catch (err) {
+      console.error("Could not load categories", err);
+    }
   }
 
   return {

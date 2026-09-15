@@ -2,15 +2,14 @@
  * FINDLY — API client with Automatic Live Cloud Fallback.
  * When a live PHP+MySQL backend is reachable, it uses native fetch().
  * When offline or on Netlify before backend deployment, it seamlessly
- * activates the In-Browser Engine so recruiters/evaluators see a 100%
- * functional university portal with zero configuration needed.
+ * activates the In-Browser Engine with standard backend envelope structures.
  */
 window.API = (function () {
   // ============================================================
   // IN-BROWSER SIMULATION ENGINE (Seed data + LocalStorage DB)
   // ============================================================
-  var DB_KEY = 'findly_cloud_db_v2';
-  var SESSION_KEY = 'findly_cloud_session_v2';
+  var DB_KEY = 'findly_cloud_db_v3';
+  var SESSION_KEY = 'findly_cloud_session_v3';
 
   function getDB() {
     var raw = localStorage.getItem(DB_KEY);
@@ -41,6 +40,7 @@ window.API = (function () {
           description: 'Black Lenovo laptop charger (65W) left plugged in Computer Lab 302. Has a small sticker on the block with "M9" written on it.',
           itemType: 'LOST',
           categoryId: 1,
+          categoryName: 'Electronics',
           location: 'Computer Lab 302, U & P Umar Institute',
           itemDate: '2026-08-18',
           imageUrl: null,
@@ -60,6 +60,7 @@ window.API = (function () {
           description: 'Lost my blue student ID card with name Sneha Joshi (21BECE2034). Last seen at the main library reading hall.',
           itemType: 'LOST',
           categoryId: 2,
+          categoryName: 'Documents/ID Cards',
           location: 'Main Library, Reading Hall',
           itemDate: '2026-08-15',
           imageUrl: null,
@@ -79,6 +80,7 @@ window.API = (function () {
           description: 'Samsung Galaxy Watch (black, 44mm) found on a bench near the central canteen. Screen has a small crack at the top edge.',
           itemType: 'FOUND',
           categoryId: 1,
+          categoryName: 'Electronics',
           location: 'Central Canteen, open area near Juice Corner',
           itemDate: '2026-08-17',
           imageUrl: null,
@@ -98,6 +100,7 @@ window.API = (function () {
           description: 'Grey backpack containing a green notebook, a pen pouch and an engineering drawing booklet, found in MCA Block corridor.',
           itemType: 'FOUND',
           categoryId: 3,
+          categoryName: 'Bags',
           location: 'MCA Block, first floor corridor',
           itemDate: '2026-08-12',
           imageUrl: null,
@@ -117,6 +120,7 @@ window.API = (function () {
           description: 'White Karbonn 10000 mAh power bank handed in by a student. Found near Seminar Hall 1 during placement drive.',
           itemType: 'FOUND',
           categoryId: 1,
+          categoryName: 'Electronics',
           location: 'Seminar Hall 1, IT Block',
           itemDate: '2026-08-05',
           imageUrl: null,
@@ -182,6 +186,16 @@ window.API = (function () {
       });
     }
 
+    // Helper to get category name by ID
+    function getCatName(cid) {
+      for (var k = 0; k < db.categories.length; k++) {
+        if (db.categories[k].categoryId === parseInt(cid, 10)) {
+          return db.categories[k].categoryName;
+        }
+      }
+      return 'General';
+    }
+
     // ── Auth Routes ──────────────────────────────────────────
     if (pathname === '/api/auth/me') {
       if (!session) {
@@ -194,7 +208,6 @@ window.API = (function () {
 
     if (pathname === '/api/auth/login') {
       var email = (body && body.email ? body.email.trim().toLowerCase() : '');
-      var pass = (body && body.password ? body.password : '');
       var found = null;
       for (var i = 0; i < db.users.length; i++) {
         if (db.users[i].email.toLowerCase() === email) {
@@ -270,13 +283,13 @@ window.API = (function () {
     // ── Categories ───────────────────────────────────────────
     if (pathname === '/api/categories') {
       if (method === 'GET') {
-        return db.categories;
+        return { categories: db.categories };
       }
       if (method === 'POST') {
         var newCat = { categoryId: db.categories.length + 1, categoryName: body.categoryName };
         db.categories.push(newCat);
         saveDB(db);
-        return newCat;
+        return { categoryId: newCat.categoryId, category: newCat };
       }
     }
     if (pathname.match(/^\/api\/categories\/(\d+)$/)) {
@@ -286,7 +299,7 @@ window.API = (function () {
           if (db.categories[c].categoryId === catId) {
             db.categories[c].categoryName = body.categoryName;
             saveDB(db);
-            return db.categories[c];
+            return { categoryId: catId, category: db.categories[c] };
           }
         }
       }
@@ -306,19 +319,20 @@ window.API = (function () {
       if (params.status) {
         result = result.filter(function (it) { return it.status === params.status; });
       }
-      if (params.categoryId) {
-        result = result.filter(function (it) { return String(it.categoryId) === String(params.categoryId); });
+      if (params.category || params.categoryId) {
+        var targetCat = params.category || params.categoryId;
+        result = result.filter(function (it) { return String(it.categoryId) === String(targetCat); });
       }
-      if (params.search) {
-        var q = params.search.toLowerCase();
+      if (params.q || params.search) {
+        var q = (params.q || params.search).toLowerCase();
         result = result.filter(function (it) {
-          return it.title.toLowerCase().indexOf(q) !== -1 ||
-                 it.description.toLowerCase().indexOf(q) !== -1 ||
-                 it.location.toLowerCase().indexOf(q) !== -1;
+          return (it.title || '').toLowerCase().indexOf(q) !== -1 ||
+                 (it.description || '').toLowerCase().indexOf(q) !== -1 ||
+                 (it.location || '').toLowerCase().indexOf(q) !== -1;
         });
       }
       result.sort(function (a, b) { return b.itemId - a.itemId; });
-      return result;
+      return { items: result, count: result.length };
     }
 
     // Single item
@@ -334,7 +348,7 @@ window.API = (function () {
       }
       if (method === 'GET') {
         if (!itemObj) { var e = new Error('Item not found'); e.status = 404; throw e; }
-        return itemObj;
+        return { item: itemObj };
       }
       if (method === 'DELETE') {
         db.items = db.items.filter(function (x) { return x.itemId !== itId; });
@@ -346,27 +360,29 @@ window.API = (function () {
           Object.assign(itemObj, body);
           saveDB(db);
         }
-        return itemObj;
+        return { item: itemObj };
       }
     }
 
-    // Item creation
+    // Item creation (lost or found)
     if (pathname === '/api/items' || pathname === '/api/items/lost' || pathname === '/api/items/found') {
-      var isLost = (pathname === '/api/items/lost' || (body && body.itemType === 'LOST'));
+      var isLost = (pathname === '/api/items/lost' || (body && (body.itemType === 'LOST' || (body.get && body.get('itemType') === 'LOST'))));
       var currentUserId = session ? session.userId : 5;
       var role = session ? session.role : 'STUDENT';
+      var catIdVal = parseInt((body && body.get ? body.get('categoryId') : (body ? body.categoryId : 1)) || 1, 10);
+
       var createdItem = {
         itemId: db.items.length + 1,
-        title: (body.get ? body.get('title') : body.title) || 'Untitled Item',
-        description: (body.get ? body.get('description') : body.description) || '',
+        title: (body && body.get ? body.get('title') : (body ? body.title : '')) || 'Untitled Item',
+        description: (body && body.get ? body.get('description') : (body ? body.description : '')) || '',
         itemType: isLost ? 'LOST' : 'FOUND',
-        categoryId: parseInt((body.get ? body.get('categoryId') : body.categoryId) || 1, 10),
-        location: (body.get ? body.get('location') : body.location) || 'Campus',
-        itemDate: (body.get ? body.get('itemDate') : body.itemDate) || new Date().toISOString().slice(0, 10),
+        categoryId: catIdVal,
+        categoryName: getCatName(catIdVal),
+        location: (body && body.get ? body.get('location') : (body ? body.location : '')) || 'Campus',
+        itemDate: (body && body.get ? body.get('itemDate') : (body ? body.itemDate : '')) || new Date().toISOString().slice(0, 10),
         imageUrl: null,
-        custodyLocation: (!isLost && (body.get ? body.get('custodyLocation') : body.custodyLocation)) || (isLost ? null : 'Security Desk'),
+        custodyLocation: (!isLost && (body && body.get ? body.get('custodyLocation') : (body ? body.custodyLocation : ''))) || (isLost ? null : 'Security Desk'),
         custodyStatus: isLost ? null : 'IN_CUSTODY',
-        // Auto-approve items in demo mode so students see their report immediately!
         status: 'ACTIVE',
         postedBy: currentUserId,
         loggedByStaff: role === 'STAFF' ? currentUserId : null,
@@ -377,7 +393,7 @@ window.API = (function () {
       };
       db.items.unshift(createdItem);
       saveDB(db);
-      return createdItem;
+      return { itemId: createdItem.itemId, item: createdItem };
     }
 
     // Item actions
@@ -387,7 +403,7 @@ window.API = (function () {
         if (db.items[m].itemId === mid) {
           db.items[m].status = (body.decision === 'APPROVE' ? 'ACTIVE' : 'REJECTED');
           saveDB(db);
-          return db.items[m];
+          return { itemId: mid, newStatus: db.items[m].status };
         }
       }
     }
@@ -398,7 +414,7 @@ window.API = (function () {
           db.items[cl].status = 'CLAIMED';
           db.items[cl].claimedAt = new Date().toISOString().replace('T', ' ').slice(0, 19);
           saveDB(db);
-          return db.items[cl];
+          return { itemId: cid, status: 'CLAIMED' };
         }
       }
     }
@@ -410,7 +426,7 @@ window.API = (function () {
           db.items[r].custodyStatus = 'HANDED_OVER';
           db.items[r].resolvedAt = new Date().toISOString().replace('T', ' ').slice(0, 19);
           saveDB(db);
-          return db.items[r];
+          return { itemId: rid, status: 'RESOLVED' };
         }
       }
     }
@@ -421,7 +437,7 @@ window.API = (function () {
           if (body.custodyLocation) db.items[cs].custodyLocation = body.custodyLocation;
           if (body.custodyStatus) db.items[cs].custodyStatus = body.custodyStatus;
           saveDB(db);
-          return db.items[cs];
+          return { itemId: cstid, item: db.items[cs] };
         }
       }
     }
@@ -433,32 +449,60 @@ window.API = (function () {
           db.items[rp].recipientContactNo = body.recipientContactNo;
           db.items[rp].recipientEnrollmentNo = body.recipientEnrollmentNo;
           saveDB(db);
-          return db.items[rp];
+          return { itemId: rcpid, item: db.items[rp] };
         }
       }
     }
 
     // ── Dashboards ───────────────────────────────────────────
-    if (pathname === '/api/dashboard/admin' || pathname === '/api/dashboard/staff' || pathname === '/api/dashboard/student') {
-      var totalItems = db.items.length;
-      var activeItems = db.items.filter(function (x) { return x.status === 'ACTIVE'; }).length;
-      var pendingItems = db.items.filter(function (x) { return x.status === 'PENDING'; }).length;
-      var resolvedItems = db.items.filter(function (x) { return x.status === 'RESOLVED'; }).length;
-      var claimedItems = db.items.filter(function (x) { return x.status === 'CLAIMED'; }).length;
+    if (pathname === '/api/dashboard/student') {
+      var myId = session ? session.userId : 5;
+      var myItems = db.items.filter(function (x) { return x.postedBy === myId && x.itemType === 'LOST'; });
+      var myPending = myItems.filter(function (x) { return x.status === 'PENDING'; }).length;
+      var myActive = myItems.filter(function (x) { return x.status === 'ACTIVE'; }).length;
+      var myRejected = myItems.filter(function (x) { return x.status === 'REJECTED'; }).length;
+      var activeFound = db.items.filter(function (x) { return x.itemType === 'FOUND' && x.status === 'ACTIVE'; }).length;
       return {
-        totalItems: totalItems,
-        activeItems: activeItems,
-        pendingItems: pendingItems,
-        resolvedItems: resolvedItems,
-        claimedItems: claimedItems,
-        totalUsers: db.users.length,
-        inCustodyCount: db.items.filter(function (x) { return x.custodyStatus === 'IN_CUSTODY'; }).length
+        myLostByStatus: { PENDING: myPending, ACTIVE: myActive, REJECTED: myRejected },
+        totalLostReports: myItems.length,
+        activeFoundItems: activeFound
+      };
+    }
+
+    if (pathname === '/api/dashboard/staff') {
+      var staffId = session ? session.userId : 2;
+      var pendingFound = db.items.filter(function (x) { return x.itemType === 'FOUND' && x.status === 'PENDING'; }).length;
+      var activeFoundStaff = db.items.filter(function (x) { return x.itemType === 'FOUND' && x.status === 'ACTIVE'; }).length;
+      var inCustodyStaff = db.items.filter(function (x) { return x.custodyStatus === 'IN_CUSTODY'; }).length;
+      var resolvedStaff = db.items.filter(function (x) { return x.status === 'RESOLVED'; }).length;
+      return {
+        pendingFoundLogs: pendingFound,
+        activeFoundItems: activeFoundStaff,
+        itemsInCustody: inCustodyStaff,
+        resolvedThisWeek: resolvedStaff
+      };
+    }
+
+    if (pathname === '/api/dashboard/admin') {
+      var totalUsers = db.users.length;
+      var pendingApprovals = db.items.filter(function (x) { return x.status === 'PENDING'; }).length;
+      var pendingHandovers = db.items.filter(function (x) { return x.status === 'CLAIMED'; }).length;
+      var resolvedCount = db.items.filter(function (x) { return x.status === 'RESOLVED'; }).length;
+      var activeItemsCount = db.items.filter(function (x) { return x.status === 'ACTIVE'; }).length;
+      return {
+        totalUsers: totalUsers,
+        pendingApprovals: pendingApprovals,
+        pendingHandovers: pendingHandovers,
+        resolvedCount: resolvedCount,
+        resolvedThisWeek: resolvedCount,
+        activeItems: activeItemsCount,
+        recentActivity: db.auditLogs || []
       };
     }
 
     // ── Users ────────────────────────────────────────────────
     if (pathname === '/api/users') {
-      return db.users;
+      return { users: db.users };
     }
     if (pathname.match(/^\/api\/users\/(\d+)\/status$/)) {
       var uid = parseInt(RegExp.$1, 10);
@@ -466,16 +510,17 @@ window.API = (function () {
         if (db.users[u1].userId === uid) {
           db.users[u1].accountStatus = body.status;
           saveDB(db);
-          return db.users[u1];
+          return { userId: uid, status: body.status };
         }
       }
     }
 
     // ── Notifications ────────────────────────────────────────
     if (pathname === '/api/notifications') {
-      var myId = session ? session.userId : null;
-      if (!myId) return [];
-      return db.notifications.filter(function (n) { return n.userId === myId; });
+      var userMyId = session ? session.userId : null;
+      var userNotes = userMyId ? db.notifications.filter(function (n) { return n.userId === userMyId; }) : [];
+      var unread = userNotes.filter(function (n) { return !n.isRead; }).length;
+      return { notifications: userNotes, unread: unread };
     }
     if (pathname.match(/^\/api\/notifications\/(\d+)\/read$/)) {
       var nid = parseInt(RegExp.$1, 10);
@@ -499,7 +544,7 @@ window.API = (function () {
   async function request(method, path, body, isForm) {
     var isLivePlaceholder = (window.API_BASE_URL && window.API_BASE_URL.indexOf('YOUR-BACKEND') !== -1);
 
-    // If on Netlify and backend URL is not yet configured, use In-Browser Engine directly
+    // If on Netlify and backend URL is placeholder, use In-Browser Engine directly
     if (isLivePlaceholder) {
       try {
         return handleMock(method, path, body);
